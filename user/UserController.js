@@ -1,59 +1,88 @@
-var express = require('express');
-var router = express.Router();
-var bodyParser = require('body-parser');
+const express = require('express');
+const router = express.Router();
+const bodyParser = require('body-parser');
+
 router.use(bodyParser.urlencoded({ extended: true }));
 router.use(bodyParser.json());
-var User = require('./User').UserModel;
 
-var createUser = require('./User').createUser;
-router.post('/', function (req, res) {
-  createUser(
-    {
-      name: req.body.name,
-      email: req.body.email,
-      password: req.body.password,
-    },
-    function (err, user) {
-      if (err)
-        return res
-          .status(500)
-          .send('There was a problem adding the information to the database.');
-      res.status(200).send(user);
+const User = require('./User').UserModel;
+
+const createUser = require('./User').createUser;
+const postUserRoute = async (req, res, next) => {
+  try {
+    const user = await createUser(req.body);
+    res.status(201).json(user);
+  } catch (e) {
+    next(e);
+  }
+};
+
+const getAllUser = require('./User').getAllUser;
+const getAllUserRoute = async (req, res, next) => {
+  try {
+    const users = await getAllUser();
+    if (!users) {
+      const err = new Error('User not found');
+      err.status = 404;
+      throw err;
     }
-  );
-});
+    res.json(users);
+  } catch (e) {
+    next(e);
+  }
+};
 
-var getAllUser = require('./User').getAllUser;
-router.get('/', function (req, res) {
-  getAllUser({}, function (err, users) {
-    if (err)
-      return res.status(500).send('There was a problem finding the users.');
-    res.status(200).send(users);
-  });
-});
+const getUser = require('./User').getOneUser;
+const getUserRoute = async (req, res, next) => {
+  try {
+    const user = await getUser(req.params.id);
+    if (!user) {
+      const err = new Error('User not found');
+      err.status = 404;
+      throw err;
+    }
+    res.json(user);
+  } catch (e) {
+    next(e);
+  }
+};
 
-var getOneUser = require('./User').getOneUser;
-router.get('/:id', function(req, res) {
-  getOneUser(req.params.id, function (err, user) {
-    if (err) return res.status(500).send("There was a problem finding the user.");
-    if (!user) return res.status(404).send("No user found.");
-    res.status(200).send(user);
-  });
-});
+var deleteUser = require('./User').removeUser;
+const deleteUserRoute = async (req, res, next) => {
+  try {
+    const user = await deleteUser(req.params.id);
+    if (!user) {
+      const err = new Error('Player stats not found');
+      err.status = 404;
+      throw err;
+    }
+    res.status(200).end();
+  } catch (e) {
+    next(e);
+  }
+};
 
-var removeUser = require('./User').removeUser;
-router.delete('/:id', function (req, res) {
-  removeUser(req.params.id, function (err, user) {
-    if (err) return res.status(500).send("There was a problem deleting the user.");
-    res.status(200).send("User "+ user.name +" was deleted.");
-  });
-});
+const updateUser = require('./User').updateUser;
+const putUserRoute = async (req, res, next) => {
+  try {
+    const user = await updateUser(req.params.id, req.body);
+    if (!user) {
+      const err = new Error('Player stats not found');
+      err.status = 404;
+      throw err;
+    }
+    res.status(200).json(user);
+  } catch (e) {
+    next(e);
+  }
+};
 
-var updateUser = require('./User').updateUser;
-router.put('/:id', function (req, res) {
-  updateUser(req.params.id, req.body, function (err, user) {
-    if (err) return res.status(500).send("There was a problem updating the user.");
-    res.status(200).send(user);
-  });
-});
+router.route('/:id')
+  .get(getUserRoute)
+  .delete(deleteUserRoute)
+  .put(putUserRoute);
+
+router.route('/')
+  .get(getAllUserRoute)
+  .post(postUserRoute);
 module.exports = router;
