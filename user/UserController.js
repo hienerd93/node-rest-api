@@ -3,11 +3,11 @@ var router = express.Router();
 var bodyParser = require('body-parser');
 router.use(bodyParser.urlencoded({ extended: true }));
 router.use(bodyParser.json());
-var User = require('./User');
+var User = require('./User').UserModel;
 
-// CREATES A NEW USER
+var createUser = require('./User').createUser;
 router.post('/', function (req, res) {
-  User.create(
+  createUser(
     {
       name: req.body.name,
       email: req.body.email,
@@ -23,37 +23,37 @@ router.post('/', function (req, res) {
   );
 });
 
-// RETURNS ALL THE USERS IN THE DATABASE
+var getAllUser = require('./User').getAllUser;
 router.get('/', function (req, res) {
-  User.find({}, function (err, users) {
+  getAllUser({}, function (err, users) {
     if (err)
       return res.status(500).send('There was a problem finding the users.');
     res.status(200).send(users);
   });
 });
 
-// GET ONE USER
-router.get('/:id', function (req, res) {
-  User.findById(req.params.id, function (err, user) {
+var getOneUser = require('./User').getOneUser;
+router.get('/:id', function(req, res) {
+  getOneUser(req.params.id, function (err, user) {
     if (err) return res.status(500).send("There was a problem finding the user.");
     if (!user) return res.status(404).send("No user found.");
     res.status(200).send(user);
   });
 });
 
-// DEL ONE USER
+var removeUser = require('./User').removeUser;
 router.delete('/:id', function (req, res) {
-  User.findByIdAndRemove(req.params.id, function (err, user) {
+  removeUser(req.params.id, function (err, user) {
     if (err) return res.status(500).send("There was a problem deleting the user.");
     res.status(200).send("User "+ user.name +" was deleted.");
   });
 });
 
-// UPDATE ONE USER
+var updateUser = require('./User').updateUser;
 router.put('/:id', function (req, res) {
-  User.findByIdAndUpdate(req.params.id, req.body, {new: true}, function (err, user) {
-      if (err) return res.status(500).send("There was a problem updating the user.");
-      res.status(200).send(user);
+  updateUser(req.params.id, req.body, function (err, user) {
+    if (err) return res.status(500).send("There was a problem updating the user.");
+    res.status(200).send(user);
   });
 });
 module.exports = router;
